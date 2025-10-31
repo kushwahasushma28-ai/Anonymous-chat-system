@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ephemeral Chat Rooms</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Define Custom Colors for Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'midnight-navy': '#0D1C2E',
+                        'imperial-blue': '#003366',
+                        'sapphire-mist': '#A2D9F7',
+                        'crimson-velvet': '#8D021F',
+                        'rose-garnet': '#C890A2',
+                        'champagne-gold': '#EAE0CC',
+                        'smoky-quartz': '#5A5A5A',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Use Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        
+        /* --- CORE THEME STYLES --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* DEEP BASE GRADIENT: Vertical fade from Midnight Navy to Imperial Blue */
+            background: linear-gradient(180deg, #0D1C2E 0%, #003366 100%); 
+            color: #EAE0CC; /* Champagne Gold text for elegance and high contrast */
+        }
+
+        /* Custom scrollbar (Smoky Quartz) */
+        #chat-window::-webkit-scrollbar {
+            width: 8px;
+        }
+        #chat-window::-webkit-scrollbar-thumb {
+            background-color: '#5A5A5A'; /* Smoky Quartz scrollbar */
+            border-radius: 4px;
+        }
+        #chat-window::-webkit-scrollbar-track {
+            background-color: '#0D1C2E'; /* Midnight Navy */
+        }
+        
+        /* Message bubble hover effect (Luxury Glow - Rose Garnet/Champagne) */
+        #chat-window > div > div {
+            cursor: default;
+            transition: all 0.2s ease-in-out;
+        }
+        #chat-window > div > div:hover {
+            transform: translateY(-2px); 
+            /* Multi-tone shadow for luxurious hover effect */
+            box-shadow: 0 6px 20px -4px rgba(141, 2, 31, 0.6), 0 0 15px rgba(162, 217, 247, 0.4); 
+        }
+
+        /* Unique, multi-color shadow for the main container - more dramatic */
+        .luxurious-shadow {
+            /* Deeper Crimson Velvet glow combined with subtle Champagne Gold highlight */
+            box-shadow: 0 0 80px rgba(141, 2, 31, 0.5), 
+                        0 0 30px rgba(234, 224, 204, 0.2); 
+        }
+        
+        /* Custom gradient class for the main submit button to look embossed/carved */
+        .btn-crimson-velvet-embossed {
+            background: linear-gradient(145deg, #7C011A, #A10325, #7C011A);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), 0 1px 1px rgba(255, 255, 255, 0.1) inset;
+        }
+        .btn-crimson-velvet-embossed:hover {
+             background: linear-gradient(145deg, #A10325, #7C011A, #A10325);
+        }
+
+        /* Custom gradient for the enhance button (tech/magic look) */
+        .btn-sapphire-rose {
+            background: linear-gradient(45deg, #A2D9F7 0%, #C890A2 100%);
+            color: #0D1C2E; /* Text in Midnight Navy for contrast */
+        }
+        .btn-sapphire-rose:hover {
+            background: linear-gradient(-45deg, #A2D9F7 0%, #C890A2 100%);
+        }
+
+        /* Custom gradient for the send button (metallic gold) */
+        .btn-champagne-gold {
+            background: linear-gradient(135deg, #EAE0CC 30%, #C890A2 70%);
+            color: #003366; /* Text in Imperial Blue for contrast */
+        }
+        .btn-champagne-gold:hover {
+            background: linear-gradient(-135deg, #EAE0CC 30%, #C890A2 70%);
+        }
+
+        /* Custom gradient for the logout button (smoky/dark) */
+        .btn-logout {
+            background: linear-gradient(145deg, #5A5A5A 30%, #303030 70%);
+            color: #EAE0CC;
+        }
+        .btn-logout:hover {
+            background: linear-gradient(145deg, #6A6A6A 30%, #404040 70%);
+        }
+
+        /* --- END CORE THEME STYLES --- */
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Application Container: Unique diagonal gradient background -->
+    <div id="app-container" class="w-full max-w-lg bg-gradient-to-br from-midnight-navy via-smoky-quartz to-imperial-blue luxurious-shadow rounded-2xl overflow-hidden transform transition-all duration-300">
+        
+        <!-- Header: Rich diagonal gradient using accents -->
+        <header class="p-4 bg-gradient-to-br from-midnight-navy via-sapphire-mist/20 to-imperial-blue text-champagne-gold shadow-lg shadow-black/70 border-b border-rose-garnet/50 flex justify-between items-center">
+            <div>
+                <!-- Mobile optimization: text-xl on small screens, scale up to text-2xl on larger (sm) screens -->
+                <h1 class="text-xl sm:text-2xl font-bold tracking-wider">EPHEMERAL VAULT: SECURE CHANNEL</h1>
+                <!-- Mobile optimization: text-xs on small screens, scale up to text-sm on larger (sm) screens -->
+                <p class="text-xs sm:text-sm opacity-90 text-sapphire-mist">Agent credentials required for protocol initiation.</p>
+            </div>
+            <!-- LOGOUT BUTTON ADDED HERE -->
+            <button id="logout-button" onclick="logOut()" class="p-2 text-xs btn-logout rounded-lg shadow-md focus:outline-none focus:ring-4 focus:ring-smoky-quartz transition duration-150 active:scale-[0.97] hidden">
+                LOG OUT / RESET
+            </button>
+            <!-- END LOGOUT BUTTON -->
+        </header>
+
+        <!-- Login Screen (Default View) -->
+        <div id="login-screen" class="p-6 space-y-4">
+            <h2 class="text-xl font-semibold text-rose-garnet">ACCESS PORTAL</h2>
+            
+            <!-- Input fields use Midnight Navy BG and Rose Garnet focus ring -->
+            <input type="password" id="password-input" placeholder="Secret Key (Room Identifier)" class="w-full p-3 border border-smoky-quartz rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-garnet bg-midnight-navy text-champagne-gold placeholder-smoky-quartz transition duration-150">
+            <input type="text" id="username-input" placeholder="Your Agent Name" class="w-full p-3 border border-smoky-quartz rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-garnet bg-midnight-navy text-champagne-gold placeholder-smoky-quartz transition duration-150">
+            
+            <!-- Button uses CUSTOM Crimson Velvet Embossed Gradient (Action) -->
+            <button onclick="attemptLogin()" class="w-full p-3 btn-crimson-velvet-embossed text-champagne-gold font-extrabold rounded-lg shadow-xl focus:outline-none focus:ring-4 focus:ring-rose-garnet transition duration-150 active:scale-[0.97]">
+                ACCESS VAULT
+            </button>
+            
+            <!-- Error message uses Crimson Velvet -->
+            <p id="login-message" class="text-crimson-velvet text-sm hidden font-bold">Authentication failed. Invalid key or name.</p>
+        </div>
+
+        <!-- Chat Screen (Hidden by Default) -->
+        <div id="chat-screen" class="hidden" style="display:none;">
+            <!-- Online Users List (Smoky Quartz BG, Sapphire Mist Text) -->
+            <div id="online-users-container" class="p-2 bg-smoky-quartz text-sapphire-mist text-xs text-center border-b border-rose-garnet/50">
+                <span class="font-bold mr-1 text-champagne-gold">ACTIVE AGENTS:</span>
+                <span id="online-users-list" class="text-sm"></span>
+            </div>
+
+            <!-- Auth Info (Imperial Blue accent) -->
+            <div id="auth-info" class="p-1 bg-imperial-blue text-champagne-gold text-xs text-center border-b border-rose-garnet/50">
+                <span id="display-user-id"></span>
+            </div>
+
+            <!-- Message Window (Midnight Navy Background) -->
+            <div id="chat-window" class="h-80 overflow-y-auto p-4 space-y-4 bg-midnight-navy">
+                <!-- Messages will be injected here -->
+            </div>
+
+            <!-- Message Input Bar (Imperial Blue BG) -->
+            <div class="p-4 border-t border-smoky-quartz flex space-x-2 bg-imperial-blue relative">
+                <!-- Input field uses Midnight Navy BG and Rose Garnet focus ring -->
+                <input type="text" id="message-input" placeholder="Transmit secure message..." class="flex-1 p-3 border border-smoky-quartz rounded-full focus:outline-none focus:ring-2 focus:ring-rose-garnet bg-midnight-navy text-champagne-gold placeholder-smoky-quartz transition duration-150">
+                
+                <!-- Enhancement Button (Gemini API) - Sapphire Mist/Rose Garnet Gradient -->
+                <button id="enhance-button" onclick="enhanceMessage()" title="Enhance message with Gemini Cipher" class="p-3 w-12 h-12 btn-sapphire-rose rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-sapphire-mist transition duration-150 active:scale-95 flex items-center justify-center disabled:opacity-50">
+                    <span id="enhance-icon" class="text-xl leading-none font-extrabold">✨</span>
+                    <div id="enhance-loading" class="hidden">
+                        <!-- Spinner Icon -->
+                        <svg class="animate-spin h-5 w-5 text-midnight-navy" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+                </button>
+
+                <!-- Send button uses Champagne Gold Metallic Gradient -->
+                <button onclick="sendMessage()" id="send-button" class="p-3 w-12 h-12 btn-champagne-gold rounded-full shadow-lg focus:outline-none focus:ring-4 focus:ring-champagne-gold transition duration-150 active:scale-95 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-45 -mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Message Box (Smoky Quartz Overlay / Crimson Velvet Alerts) -->
+        <div id="message-box" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-50">
+            <div class="bg-midnight-navy p-6 rounded-lg shadow-xl max-w-sm w-full space-y-4 border-2 border-crimson-velvet">
+                <h3 id="message-box-title" class="text-lg font-semibold text-crimson-velvet">ALERT: Security Protocol Error</h3>
+                <p id="message-box-content" class="text-champagne-gold"></p>
+                <!-- Close button uses Crimson Velvet -->
+                <button onclick="hideMessageBox()" class="w-full p-2 bg-crimson-velvet text-champagne-gold rounded-lg hover:bg-[#B31D3F] font-bold">ACKNOWLEDGE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Imports and Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, deleteDoc, onSnapshot, collection, query, serverTimestamp, setLogLevel, limit, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Firebase variables
+        let app;
+        let db;
+        let auth;
+        let userId = 'unknown';
+        let isUserPresent = false; 
+        let currentRoomId = null; 
+        
+        // --- VITAL STEP: PASTE YOUR FIREBASE CONFIGURATION HERE ---
+        // REPLACE the placeholder values below with the configuration you copied from the Firebase Console.
+        const firebaseConfig = {
+            apiKey: "AIzaSyD-TJSWUjeGdz78d7-KL4zlZGkH8W7TZoI", 
+            authDomain: "chat-system-f25e0.firebaseapp.com",
+            projectId: "chat-system-f25e0", 
+            storageBucket: "chat-system-f25e0.firebasestorage.app",
+            messagingSenderId: "761527805743",
+            appId: "1:761527805743:web:37413030f93cd831a323da"
+            // Note: measurementId is not needed for core functionality.
+        };
+        // --- END FIREBASE CONFIGURATION ---
+
+        // Local application identifier for the collection path
+        const appId = firebaseConfig.projectId || 'ephemeral-chat-app';
+
+        // Configuration
+        const MESSAGE_LIFESPAN = 10000; // 10 seconds in milliseconds
+        
+        // Timer storage to track which message documents need deleting
+        const deletionTimers = {};
+
+        // --- Hashing Function for Room ID (MODIFIED FOR UNIVERSAL COMPATIBILITY) ---
+        // Uses the simple, consistent SDBM algorithm which is less prone to 
+        // inconsistent native implementations across devices than SHA-256.
+        const sdbmHash = (str) => {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + (hash << 6) + (hash << 16) - hash;
+            }
+            // Ensure positive and convert to hex for a clean room ID
+            return (hash >>> 0).toString(16).padStart(8, '0'); 
+        };
+
+        // --- Dynamic Collection Path Getters (Unchanged) ---
+        const getChatCollectionPath = () => {
+            if (!currentRoomId) throw new Error("Not connected to a room.");
+            // Collection Path: /artifacts/YOUR_PROJECT_ID/public/data/chat_room_{roomId}
+            return `artifacts/${appId}/public/data/chat_room_${currentRoomId}`;
+        };
+
+        const getUsersCollectionPath = () => {
+            if (!currentRoomId) throw new Error("Not connected to a room.");
+            // Collection Path: /artifacts/YOUR_PROJECT_ID/public/data/users_room_{roomId}
+            return `artifacts/${appId}/public/data/users_room_${currentRoomId}`;
+        };
+
+        // --- Utility Functions (Unchanged) ---
+
+        // Function to show custom message box 
+        window.showMessageBox = (title, content, isError = true) => {
+            document.getElementById('message-box-title').textContent = title;
+            document.getElementById('message-box-content').textContent = content;
+            document.getElementById('message-box-title').className = isError ? 'text-lg font-semibold text-crimson-velvet' : 'text-lg font-semibold text-champagne-gold';
+            document.getElementById('message-box').classList.remove('hidden');
+            document.getElementById('message-box').classList.add('flex');
+        }
+
+        // Function to hide custom message box
+        window.hideMessageBox = () => {
+            document.getElementById('message-box').classList.add('hidden');
+            document.getElementById('message-box').classList.remove('flex');
+        }
+
+        // --- Firebase Initialization and Authentication ---
+
+        const initializeFirebase = async () => {
+            try {
+                if (!firebaseConfig.apiKey || firebaseConfig.apiKey.includes("YOUR_API_KEY")) {
+                     throw new Error("Firebase configuration is missing or using placeholders. Please update firebaseConfig with your actual keys."); 
+                }
+
+                setLogLevel('debug'); 
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Always use Anonymous Sign-In for local setup
+                await signInAnonymously(auth);
+
+                await new Promise(resolve => {
+                    onAuthStateChanged(auth, (user) => {
+                        if (user) {
+                            userId = user.uid;
+                            console.log("Authenticated with userId:", userId);
+                        } else {
+                            userId = crypto.randomUUID(); 
+                            console.error("Anonymous sign-in failed. Check Firebase Auth settings.");
+                        }
+                        resolve();
+                    });
+                });
+                
+                checkLoginStatus(); 
+
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                showMessageBox("SETUP REQUIRED", `Could not connect to Firebase. Did you replace the placeholder keys in the code with your actual keys? Error: ${error.message}`, true);
+                
+                // Ensure UI is clean even on error
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('chat-screen').classList.add('hidden');
+                document.getElementById('chat-screen').style.display = 'none';
+            }
+        };
+
+        // --- Log Out Function ---
+        window.logOut = () => {
+            // 1. Clear saved credentials
+            localStorage.removeItem('chatUsername');
+            localStorage.removeItem('chatPassword');
+            localStorage.removeItem('isLoggedIn');
+            
+            // 2. Hide chat, show login
+            document.getElementById('chat-screen').classList.add('hidden');
+            document.getElementById('chat-screen').style.display = 'none';
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('logout-button').classList.add('hidden');
+
+            // 3. Optional: Clean up user presence in the database (best effort)
+            if (isUserPresent && db && currentRoomId) {
+                 const userDocRef = doc(db, getUsersCollectionPath(), userId);
+                 deleteDoc(userDocRef).catch(e => console.warn("Failed to delete presence on manual log out:", e));
+                 isUserPresent = false;
+            }
+            // 4. Reload the window to re-initialize the app cleanly
+            window.location.reload(); 
+        };
+        // --- END LOG OUT FUNCTION ---
+
+
+        window.attemptLogin = () => {
+            const password = document.getElementById('password-input').value.trim();
+            const username = document.getElementById('username-input').value.trim();
+            const loginMessage = document.getElementById('login-message');
+
+            if (!username) {
+                loginMessage.textContent = "Please enter your name.";
+                loginMessage.classList.remove('hidden');
+                return;
+            }
+
+            if (!password) {
+                loginMessage.textContent = "Please enter a Secret Key for the room.";
+                loginMessage.classList.remove('hidden');
+                return;
+            }
+            
+            // --- USE NEW HASH FUNCTION ---
+            const roomId = sdbmHash(password);
+
+            localStorage.setItem('chatUsername', username);
+            localStorage.setItem('chatPassword', password); 
+            localStorage.setItem('isLoggedIn', 'true');
+            loginMessage.classList.add('hidden');
+            
+            connectToRoom(roomId, username);
+        };
+        
+        const connectToRoom = (roomId, username) => {
+            currentRoomId = roomId;
+            showChatScreen();
+            
+            setupChatListener();
+            setupUserListener();
+            setupUserPresence();
+        };
+
+
+        const checkLoginStatus = () => {
+            const username = localStorage.getItem('chatUsername');
+            const password = localStorage.getItem('chatPassword');
+
+            if (localStorage.getItem('isLoggedIn') === 'true' && username && password) {
+                try {
+                    // --- USE NEW HASH FUNCTION ---
+                    const roomId = sdbmHash(password);
+                    connectToRoom(roomId, username);
+                } catch (e) {
+                    console.error("Failed to re-establish session:", e);
+                    localStorage.removeItem('isLoggedIn');
+                    checkLoginStatus(); 
+                }
+            } else {
+                document.getElementById('login-screen').classList.remove('hidden');
+                document.getElementById('chat-screen').classList.add('hidden');
+                document.getElementById('chat-screen').style.display = 'none'; 
+            }
+        };
+
+        const showChatScreen = () => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('chat-screen').classList.remove('hidden');
+            document.getElementById('chat-screen').style.display = 'block'; 
+            document.getElementById('display-user-id').textContent = `ROOM_ID: ${currentRoomId} | AGENT: ${localStorage.getItem('chatUsername')}`;
+            document.getElementById('logout-button').classList.remove('hidden'); 
+        };
+
+        // --- User Presence Functions (Unchanged Logic) ---
+
+        const setupUserPresence = async () => {
+            if (!db || isUserPresent || !currentRoomId) return;
+
+            const username = localStorage.getItem('chatUsername');
+            if (!username) return;
+
+            const userDocRef = doc(db, getUsersCollectionPath(), userId);
+
+            try {
+                await setDoc(userDocRef, {
+                    username: username,
+                    joinedAt: serverTimestamp(),
+                    appId: appId
+                });
+                isUserPresent = true;
+
+                window.addEventListener('beforeunload', () => {
+                    if (db) {
+                         deleteDoc(userDocRef).catch(e => console.error("Failed to delete presence on exit:", e));
+                    }
+                });
+
+            } catch (e) {
+                console.error("Error setting up user presence: ", e);
+                isUserPresent = false;
+            }
+        };
+        
+        const setupUserListener = () => {
+            if (!db || !currentRoomId) return;
+
+            const q = query(collection(db, getUsersCollectionPath()));
+            
+            onSnapshot(q, (snapshot) => {
+                const users = [];
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.username) {
+                        users.push(data.username);
+                    }
+                });
+                renderUserList(users);
+            }, (error) => {
+                console.error("Error listening to users:", error);
+            });
+        };
+
+        const renderUserList = (users) => {
+            const listElement = document.getElementById('online-users-list');
+            const currentUser = localStorage.getItem('chatUsername');
+
+            if (users.length === 0) {
+                listElement.textContent = "No one else online. (Awaiting Connection)";
+            } else {
+                const listHtml = users.map(name => {
+                    return `<span class="px-2 py-0.5 rounded-full ${name === currentUser 
+                        ? 'bg-crimson-velvet text-champagne-gold font-bold shadow-sm shadow-crimson-velvet/50' 
+                        : 'bg-imperial-blue text-sapphire-mist border border-sapphire-mist/50' 
+                    }">${name}</span>`;
+                }).join(' ');
+                listElement.innerHTML = listHtml;
+            }
+        };
+
+
+        // --- Chat Functions (Unchanged Logic) ---
+
+        window.sendMessage = async () => {
+            const messageInput = document.getElementById('message-input');
+            const messageText = messageInput.value.trim();
+            const username = localStorage.getItem('chatUsername');
+
+            if (messageText && username && db && currentRoomId) {
+                try {
+                    await addDoc(collection(db, getChatCollectionPath()), {
+                        userId: userId,
+                        username: username,
+                        text: messageText,
+                        timestamp: serverTimestamp(), 
+                        appId: appId
+                    });
+                    messageInput.value = '';
+                } catch (e) {
+                    console.error("Error adding document: ", e);
+                    showMessageBox("Send Error", "Failed to transmit message. Check network integrity.", true);
+                }
+            }
+        };
+
+        const setupChatListener = () => {
+            if (!db || !currentRoomId) return;
+
+            const q = query(collection(db, getChatCollectionPath()), limit(50));
+            
+            onSnapshot(q, (snapshot) => {
+                const messages = [];
+                const chatWindow = document.getElementById('chat-window');
+                const existingMessageIds = new Set(Array.from(chatWindow.children).map(el => el.id.replace('msg-', '')));
+                const receivedMessageIds = new Set();
+                
+                snapshot.docChanges().forEach((change) => {
+                    const data = change.doc.data();
+                    const docId = change.doc.id;
+                    
+                    receivedMessageIds.add(docId);
+
+                    if (change.type === "added") {
+                        if (!existingMessageIds.has(docId)) {
+                             messages.push({ ...data, id: docId });
+                        }
+                    } 
+                    
+                    if (change.type === "removed") {
+                        const removedElement = document.getElementById(`msg-${docId}`);
+                        if (removedElement) {
+                            removedElement.remove();
+                        }
+                        if (deletionTimers[docId]) {
+                            clearTimeout(deletionTimers[docId]);
+                            delete deletionTimers[docId];
+                        }
+                    }
+                });
+                
+                messages.sort((a, b) => a.timestamp?.toMillis() - b.timestamp?.toMillis());
+                messages.forEach(msg => renderMessage(msg));
+
+                Object.keys(deletionTimers).forEach(id => {
+                    if (!receivedMessageIds.has(id)) {
+                        clearTimeout(deletionTimers[id]);
+                        delete deletionTimers[id];
+                    }
+                });
+
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+            }, (error) => {
+                console.error("Error listening to messages:", error);
+                showMessageBox("Connection Error", "Lost integrity with the central server.", true);
+            });
+        };
+
+        const renderMessage = (msg) => {
+            const chatWindow = document.getElementById('chat-window');
+            const isMine = msg.userId === userId;
+            const docId = msg.id;
+
+            if (document.getElementById(`msg-${docId}`)) {
+                return;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.id = `msg-${docId}`;
+            messageDiv.className = `flex ${isMine ? 'justify-end' : 'justify-start'} opacity-100 transition-opacity duration-1000`;
+
+            const bubble = document.createElement('div');
+            // My message: Imperial Blue. Other's message: Smoky Quartz BG/Champagne Gold text.
+            bubble.className = `max-w-[80%] p-3 rounded-xl shadow-md transition-all duration-300 transform ${
+                isMine 
+                ? 'bg-imperial-blue text-champagne-gold rounded-br-none shadow-imperial-blue/50' 
+                : 'bg-smoky-quartz text-champagne-gold rounded-tl-none border border-midnight-navy shadow-black/50'
+            }`;
+
+            const usernameSpan = document.createElement('span');
+            usernameSpan.className = `block text-xs font-semibold mb-1 ${
+                isMine 
+                ? 'text-rose-garnet' 
+                : 'text-sapphire-mist' /* Differentiate username color */
+            }`;
+            usernameSpan.textContent = msg.username;
+
+            const textP = document.createElement('p');
+            textP.className = 'text-sm break-words';
+            textP.textContent = msg.text;
+
+            bubble.appendChild(usernameSpan);
+            bubble.appendChild(textP);
+            messageDiv.appendChild(bubble);
+            chatWindow.appendChild(messageDiv);
+            
+            // --- Ephemerality Logic ---
+
+            const messageElement = document.getElementById(`msg-${docId}`);
+            if(messageElement) {
+                // Fade out visually
+                setTimeout(() => {
+                    messageElement.classList.add('opacity-0');
+                    setTimeout(() => {
+                        messageElement.remove();
+                    }, 1000); 
+                }, MESSAGE_LIFESPAN - 1000);
+            }
+
+            // Database deletion 
+            deletionTimers[docId] = setTimeout(async () => {
+                try {
+                    if (db && currentRoomId) {
+                        await deleteDoc(doc(db, getChatCollectionPath(), docId));
+                        console.log(`Message ${docId} deleted from Firestore in room ${currentRoomId}.`);
+                    }
+                } catch (e) {
+                    console.error("Error deleting document: ", e);
+                } finally {
+                    delete deletionTimers[docId];
+                }
+            }, MESSAGE_LIFESPAN + 500);
+        };
+        
+        // --- Gemini API Feature: Message Enhancement (Unchanged) ---
+
+        const GEMINI_MODEL = 'gemini-2.5-flash-preview-05-20';
+        const API_KEY = ""; 
+        const API_BASE_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+        const MAX_RETRIES = 5;
+
+        // API Utility: Exponential Backoff
+        const exponentialBackoffFetch = async (url, options, maxRetries = MAX_RETRIES) => {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && i < maxRetries - 1) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    }
+                    if (!response.ok) {
+                        let errorDetail = await response.text();
+                        try {
+                            const errorJson = JSON.parse(errorDetail);
+                            errorDetail = errorJson.error ? errorJson.error.message : errorDetail;
+                        } catch (e) {
+                            // ignore JSON parse error
+                        }
+                        throw new Error(`HTTP error! Status: ${response.status}. Detail: ${errorDetail}`);
+                    }
+                    return response.json();
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        throw error;
+                    }
+                }
+            }
+            throw new Error("Fetch failed after maximum retries.");
+        };
+
+        window.enhanceMessage = async () => {
+            const messageInput = document.getElementById('message-input');
+            const enhanceButton = document.getElementById('enhance-button');
+            const enhanceIcon = document.getElementById('enhance-icon');
+            const enhanceLoading = document.getElementById('enhance-loading');
+            
+            const userQuery = messageInput.value.trim();
+
+            if (!userQuery) {
+                showMessageBox("Input Required", "Please type a message before attempting to enhance it.", false);
+                return;
+            }
+            
+            if (!API_KEY) {
+                 showMessageBox("Gemini Feature Disabled", "The enhancement feature requires a Gemini API key to function. This key is automatically provided in the online environment, but must be manually added for a local setup.", true);
+                 return;
+            }
+
+            // Disable button and show spinner
+            enhanceButton.disabled = true;
+            enhanceIcon.classList.add('hidden');
+            enhanceLoading.classList.remove('hidden');
+
+            try {
+                const systemPrompt = `You are a sophisticated AI Cipher and Communication Protocol Specialist for a highly secretive,
+                                      ephemeral chat system. Your task is to enhance the user's message by translating it into a short, 
+                                      dramatic, and highly formalized communication. Do not change the core meaning, but wrap it in 
+                                      "security-speak" or "spy-speak." The final response must be concise and immediately usable as a 
+                                      message in the chat, without any preamble or explanation.`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                };
+
+                const response = await exponentialBackoffFetch(API_BASE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const candidate = response.candidates?.[0];
+                const enhancedText = candidate?.content?.parts?.[0]?.text;
+
+                if (enhancedText) {
+                    messageInput.value = enhancedText.trim();
+                } else {
+                    showMessageBox("Enhancement Failed", "Received empty or corrupted response from the Gemini Cipher. Retrying is recommended.", true);
+                }
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                showMessageBox("System Status: RED", `Gemini Cipher Protocol Failed. Error: ${error.message}`, true);
+            } finally {
+                // Re-enable button and hide spinner
+                enhanceButton.disabled = false;
+                enhanceIcon.classList.remove('hidden');
+                enhanceLoading.classList.add('hidden');
+            }
+        };
+
+
+        // --- Event Listeners (Unchanged) ---
+        document.getElementById('message-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        document.getElementById('username-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                 e.preventDefault(); 
+                 document.getElementById('password-input').focus();
+            }
+        });
+
+        document.getElementById('password-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                attemptLogin();
+            }
+        });
+
+        // Initialize on load
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
